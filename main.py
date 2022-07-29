@@ -257,6 +257,7 @@ START_TEXTS = [
     '/voteban@bandugan_bot',
     '@bandugan_bot',
 
+    '@banof',
     '@banofbot',
 ]
 
