@@ -346,10 +346,10 @@ async def handle_poll_vote(context, poll_answer):
     elif option_text == NO_BAN_TEXT:
         voting.no_ban_user_ids.append(user_id)
 
-    ban_count = len(voting.ban_user_ids)
-    no_ban_count = len(voting.no_ban_user_ids)
-    if ban_count + no_ban_count >= voting.min_votes:
-        if ban_count > no_ban_count:
+    ban = len(voting.ban_user_ids) >= voting.min_votes
+    no_ban = len(voting.no_ban_user_ids) >= voting.min_votes
+    if ban or no_ban:
+        if ban:
             await context.bot.ban_chat_member(
                 chat_id=voting.chat_id,
                 user_id=voting.candidate_user_id,
