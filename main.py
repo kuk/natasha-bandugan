@@ -9,7 +9,8 @@ from contextlib import AsyncExitStack
 from aiogram import (
     Bot,
     Dispatcher,
-    executor
+    executor,
+    exceptions
 )
 from aiogram.types import ChatMemberStatus
 
@@ -329,6 +330,13 @@ async def handle_start_voting(context, message):
     await context.db.put_voting(voting)
 
 
+async def safe_delete_message(bot, **kwargs):
+    try:
+        await bot.delete_message(**kwargs)
+    except exceptions.MessageToDeleteNotFound:
+        return
+
+
 async def handle_poll_vote(context, poll_answer):
     voting = await context.db.get_voting(poll_answer.poll_id)
 
@@ -356,13 +364,15 @@ async def handle_poll_vote(context, poll_answer):
                 chat_id=voting.chat_id,
                 user_id=voting.candidate_user_id,
             )
-            await context.bot.delete_message(
+            await safe_delete_message(
+                context.bot,
                 chat_id=voting.chat_id,
                 message_id=voting.candidate_message_id
             )
 
         for message_id in [voting.start_message_id, voting.poll_message_id]:
-            await context.bot.delete_message(
+            await safe_delete_message(
+                context.bot,
                 chat_id=voting.chat_id,
                 message_id=message_id
             )
