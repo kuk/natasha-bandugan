@@ -260,7 +260,7 @@ START_TEXTS = [
     '@banofbot',
 ]
 
-QUESTION_TEXT = 'Забанить {mention}?'
+QUESTION_TEXT = 'Забанить {mention}? ⚖️'
 BAN_TEXT = 'Забанить'
 NO_BAN_TEXT = 'Не банить'
 OPTION_TEXTS = [
