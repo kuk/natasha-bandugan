@@ -213,7 +213,7 @@ async def test_ban_vote(context):
         ['deleteMessage', '{"chat_id": 123, "message_id": 4}'],
         ['deleteMessage', '{"chat_id": 123, "message_id": 1}']
     ])
-    voting = await context.db.get_voting(MOCK_VOTING.poll_id)
+    voting = await context.db.get_voting(INIT_VOTING.poll_id)
     assert voting.ban_user_ids == [113947584]
 
 
