@@ -331,11 +331,16 @@ async def handle_start_voting(context, message):
 async def handle_poll_vote(context, poll_answer):
     voting = await context.db.get_voting(poll_answer.poll_id)
 
+    # revote
+    user_id = poll_answer.user.id
+    for user_ids in [voting.ban_user_ids, voting.no_ban_user_ids]:
+        if user_id in user_ids:
+            user_ids.remove(user_id)
+
     # allows_multiple_answers=False
     option_id = poll_answer.option_ids[0]
     option_text = OPTION_TEXTS[option_id]
 
-    user_id = poll_answer.user.id
     if option_text == BAN_TEXT:
         voting.ban_user_ids.append(user_id)
     elif option_text == NO_BAN_TEXT:

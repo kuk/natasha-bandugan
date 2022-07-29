@@ -4,6 +4,7 @@ from json import (
     loads as parse_json,
     dumps as format_json
 )
+from dataclasses import replace
 
 import pytest
 
@@ -194,7 +195,7 @@ async def test_ban_admin(context):
 
 VOTE_JSON = '{"poll_answer": {"poll_id": "123", "user": {"id": 113947584, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin", "username": "alexkuk", "language_code": "ru"}, "option_ids": [0]}}'
 
-MOCK_VOTING = Voting(
+INIT_VOTING = Voting(
     poll_id='123', chat_id=123,
     candidate_message_id=2, poll_message_id=1, start_message_id=4,
     starter_user_id=113947584, candidate_user_id=5428138451,
@@ -204,7 +205,7 @@ MOCK_VOTING = Voting(
 
 
 async def test_ban_vote(context):
-    context.db.votings = [MOCK_VOTING]
+    context.db.votings = [INIT_VOTING]
     await process_update(context, VOTE_JSON)
     assert match_trace(context.bot.trace, [
         ['banChatMember', '{"chat_id": 123, "user_id": 5428138451'],
@@ -217,12 +218,34 @@ async def test_ban_vote(context):
 
 
 async def test_no_ban_vote(context):
-    context.db.votings = [MOCK_VOTING]
+    context.db.votings = [INIT_VOTING]
     await process_update(context, VOTE_JSON.replace('[0]', '[1]'))
     assert match_trace(context.bot.trace, [
         ['deleteMessage', '{"chat_id": 123, "message_id": 4}'],
         ['deleteMessage', '{"chat_id": 123, "message_id": 1}']
     ])
-    voting = await context.db.get_voting(MOCK_VOTING.poll_id)
+    voting = await context.db.get_voting(INIT_VOTING.poll_id)
     assert voting.no_ban_user_ids == [113947584]
 
+
+async def test_no_ban_vote(context):
+    context.db.votings = [INIT_VOTING]
+    await process_update(context, VOTE_JSON.replace('[0]', '[1]'))
+    assert match_trace(context.bot.trace, [
+        ['deleteMessage', '{"chat_id": 123, "message_id": 4}'],
+        ['deleteMessage', '{"chat_id": 123, "message_id": 1}']
+    ])
+    voting = await context.db.get_voting(INIT_VOTING.poll_id)
+    assert voting.no_ban_user_ids == [113947584]
+
+
+async def test_revote(context):
+    context.db.votings = [
+        replace(INIT_VOTING, min_votes=2)
+    ]
+    await process_update(context, VOTE_JSON)
+    await process_update(context, VOTE_JSON.replace('[0]', '[1]'))
+    assert context.bot.trace == []
+    voting = await context.db.get_voting(INIT_VOTING.poll_id)
+    assert voting.ban_user_ids == []
+    assert voting.no_ban_user_ids == [113947584]
