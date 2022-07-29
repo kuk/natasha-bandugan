@@ -338,14 +338,15 @@ async def handle_poll_vote(context, poll_answer):
         if user_id in user_ids:
             user_ids.remove(user_id)
 
-    # allows_multiple_answers=False
-    option_id = poll_answer.option_ids[0]
-    option_text = OPTION_TEXTS[option_id]
+    if poll_answer.option_ids:
+        # allows_multiple_answers=False
+        option_id = poll_answer.option_ids[0]
+        option_text = OPTION_TEXTS[option_id]
 
-    if option_text == BAN_TEXT:
-        voting.ban_user_ids.append(user_id)
-    elif option_text == NO_BAN_TEXT:
-        voting.no_ban_user_ids.append(user_id)
+        if option_text == BAN_TEXT:
+            voting.ban_user_ids.append(user_id)
+        elif option_text == NO_BAN_TEXT:
+            voting.no_ban_user_ids.append(user_id)
 
     ban = len(voting.ban_user_ids) >= voting.min_votes
     no_ban = len(voting.no_ban_user_ids) >= voting.min_votes
