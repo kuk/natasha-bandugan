@@ -1,4 +1,4 @@
-IMAGE = natasha-bandugan-bot
+IMAGE = natasha-bandugan
 REGISTRY = cr.yandex/$(REGISTRY_ID)
 REMOTE = $(REGISTRY)/$(IMAGE)
 
@@ -21,7 +21,7 @@ push:
 deploy:
 	yc serverless container revision deploy \
 		--container-name default \
-		--image $(REGISTRY)/natasha-bandugan-bot:latest \
+		--image $(REGISTRY)/natasha-bandugan:latest \
 		--cores 1 \
 		--memory 256MB \
 		--concurrency 16 \
@@ -31,4 +31,4 @@ deploy:
 		--environment AWS_KEY=$(AWS_KEY) \
 		--environment DYNAMO_ENDPOINT=$(DYNAMO_ENDPOINT) \
 		--service-account-id $(SERVICE_ACCOUNT_ID) \
-		--folder-name natasha-bandugan-bot
+		--folder-name natasha-bandugan

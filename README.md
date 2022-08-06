@@ -12,13 +12,13 @@
 Создать директорию в YC.
 
 ```bash
-yc resource-manager folder create --name natasha-bandugan-bot
+yc resource-manager folder create --name natasha-bandugan
 ```
 
 Создать сервисный аккаунт в YC. Записать `id` в `.env`.
 
 ```bash
-yc iam service-accounts create natasha-bandugan-bot --folder-name natasha-bandugan-bot
+yc iam service-accounts create natasha-bandugan --folder-name natasha-bandugan
 
 id: {SERVICE_ACCOUNT_ID}
 ```
@@ -27,8 +27,8 @@ id: {SERVICE_ACCOUNT_ID}
 
 ```bash
 yc iam access-key create \
-  --service-account-name natasha-bandugan-bot \
-  --folder-name natasha-bandugan-bot
+  --service-account-name natasha-bandugan \
+  --folder-name natasha-bandugan
 
 key_id: {AWS_KEY_ID}
 secret: {AWS_KEY}
@@ -39,10 +39,10 @@ secret: {AWS_KEY}
 ```bash
 for role in ydb.viewer ydb.editor
 do
-  yc resource-manager folder add-access-binding natasha-bandugan-bot \
+  yc resource-manager folder add-access-binding natasha-bandugan \
     --role $role \
-    --service-account-name natasha-bandugan-bot \
-    --folder-name natasha-bandugan-bot \
+    --service-account-name natasha-bandugan \
+    --folder-name natasha-bandugan \
     --async
 done
 ```
@@ -50,7 +50,7 @@ done
 Создать базу YDB. Записать эндпоинт для DynamoDB в `.env`.
 
 ```bash
-yc ydb database create default --serverless --folder-name natasha-bandugan-bot
+yc ydb database create default --serverless --folder-name natasha-bandugan
 
 document_api_endpoint: {DYNAMO_ENDPOINT}
 ```
@@ -59,7 +59,7 @@ document_api_endpoint: {DYNAMO_ENDPOINT}
 
 ```bash
 pip install awscli
-aws configure --profile natasha-bandugan-bot
+aws configure --profile natasha-bandugan
 
 {AWS_KEY_ID}
 {AWS_KEY}
@@ -76,7 +76,7 @@ aws dynamodb create-table \
   --key-schema \
     AttributeName=poll_id,KeyType=HASH \
   --endpoint $DYNAMO_ENDPOINT \
-  --profile natasha-bandugan-bot
+  --profile natasha-bandugan
 ```
 
 Удалить таблички.
@@ -84,7 +84,7 @@ aws dynamodb create-table \
 ```bash
 aws dynamodb delete-table --table-name votings \
   --endpoint $DYNAMO_ENDPOINT \
-  --profile natasha-bandugan-bot
+  --profile natasha-bandugan
 ```
 
 Список таблиц.
@@ -92,7 +92,7 @@ aws dynamodb delete-table --table-name votings \
 ```bash
 aws dynamodb list-tables \
   --endpoint $DYNAMO_ENDPOINT \
-  --profile natasha-bandugan-bot
+  --profile natasha-bandugan
 ```
 
 Прочитать табличку.
@@ -101,13 +101,13 @@ aws dynamodb list-tables \
 aws dynamodb scan \
   --table-name votings \
   --endpoint $DYNAMO_ENDPOINT \
-  --profile natasha-bandugan-bot
+  --profile natasha-bandugan
 ```
 
 Создать реестр для контейнера в YC. Записать `id` в `.env`.
 
 ```bash
-yc container registry create default --folder-name natasha-bandugan-bot
+yc container registry create default --folder-name natasha-bandugan
 
 id: {REGISTRY_ID}
 ```
@@ -117,14 +117,14 @@ id: {REGISTRY_ID}
 ```bash
 yc container registry add-access-binding default \
   --role container-registry.images.puller \
-  --service-account-name natasha-bandugan-bot \
-  --folder-name natasha-bandugan-bot
+  --service-account-name natasha-bandugan \
+  --folder-name natasha-bandugan
 ```
 
 Создать Serverless Container. Записать `id` в `.env`.
 
 ```bash
-yc serverless container create --name default --folder-name natasha-bandugan-bot
+yc serverless container create --name default --folder-name natasha-bandugan
 
 id: {CONTAINER_ID}
 ```
@@ -133,13 +133,13 @@ id: {CONTAINER_ID}
 
 ```bash
 yc serverless container allow-unauthenticated-invoke default \
-  --folder-name natasha-bandugan-bot
+  --folder-name natasha-bandugan
 ```
 
 Логи.
 
 ```bash
-yc log read default --follow --folder-name natasha-bandugan-bot
+yc log read default --follow --folder-name natasha-bandugan
 ```
 
 Прицепить вебхук.
