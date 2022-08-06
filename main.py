@@ -272,7 +272,7 @@ OPTION_TEXTS = [
 
 IS_ADMIN_TEXT = '{mention} админ'
 
-MIN_VOTES = 1
+MIN_VOTES = 10
 
 
 async def handle_start_voting(context, message):
