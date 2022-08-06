@@ -259,7 +259,7 @@ START_TEXTS = [
     '@bandugan_bot',
 
     '@banof',
-    '@banofbot',
+    '@banofbot',  # Auto complete via users list
 ]
 
 QUESTION_TEXT = 'Забанить {mention}? ⚖️'
