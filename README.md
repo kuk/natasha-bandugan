@@ -155,13 +155,6 @@ WEBHOOK_URL=https://${CONTAINER_ID}.containers.yandexcloud.net/
 curl --url https://api.telegram.org/bot${BOT_TOKEN}/setWebhook\?url=${WEBHOOK_URL}
 ```
 
-Установить Jupyter kernel.
-
-```bash
-pip install ipykernel
-python -m ipykernel install --user --name natasha-bandugan
-```
-
 Установить зависимости для бота.
 
 ```bash
