@@ -149,6 +149,16 @@ WEBHOOK_URL=https://${CONTAINER_ID}.containers.yandexcloud.net/
 curl --url https://api.telegram.org/bot${BOT_TOKEN}/setWebhook\?url=${WEBHOOK_URL}
 ```
 
+Создать окружение, установить кернел.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+
+pip install ipykernel
+python -m ipykernel install --user --name natasha-bandugan
+```
+
 Трюк чтобы загрузить окружение из `.env`.
 
 ```bash
