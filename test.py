@@ -35,12 +35,9 @@ from main import (
 #####
 
 
-@pytest.fixture(scope='session')
-def event_loop():
-    return asyncio.get_event_loop()
+# MAYBE FIXME scope='session' breaks is strange way
 
-
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 async def db():
     db = DB()
     await db.connect()
@@ -136,7 +133,6 @@ class FakeBotContext(BotContext):
         self.bot = FakeBot('123:faketoken')
         self.dispatcher = Dispatcher(self.bot)
         self.db = FakeDB()
-
 
 
 @pytest.fixture(scope='function')
