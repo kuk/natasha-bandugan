@@ -58,7 +58,7 @@ document_api_endpoint: {DYNAMO_ENDPOINT}
 Установить, настроить `aws`.
 
 ```bash
-pip install awscli
+pip install awscli==1.29.27
 aws configure --profile natasha-bandugan
 
 {AWS_KEY_ID}
@@ -163,6 +163,14 @@ python -m ipykernel install --user --name natasha-bandugan
 
 ```bash
 export $(cat .env | xargs)
+```
+
+Установить зависимости для бота.
+
+```bash
+pip install \
+  aiogram==2.21 \
+  aiobotocore==2.3.4
 ```
 
 Установить зависимости для тестов.
