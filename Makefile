@@ -1,6 +1,5 @@
 IMAGE = natasha-bandugan
 REGISTRY = cr.yandex/$(REGISTRY_ID)
-REMOTE = $(REGISTRY)/$(IMAGE)
 
 test-lint:
 	pytest -vv --asyncio-mode=auto --pycodestyle --flakes main.py
@@ -13,12 +12,12 @@ image:
 
 push:
 	docker tag $(IMAGE) $(REMOTE)
-	docker push $(REMOTE)
+	docker push $(REGISTRY)/$(IMAGE)
 
 deploy:
 	yc serverless container revision deploy \
 		--container-name default \
-		--image $(REGISTRY)/natasha-bandugan:latest \
+		--image $(REGISTRY)/$(IMAGE):latest \
 		--cores 1 \
 		--memory 256MB \
 		--concurrency 16 \
