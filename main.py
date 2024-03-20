@@ -41,16 +41,6 @@ DYNAMO_ENDPOINT = getenv('DYNAMO_ENDPOINT')
 #####
 
 
-def obj_annots(obj):
-    for field in fields(obj):
-        yield field.name, field.type
-
-
-####
-#   VOTING
-######
-
-
 @dataclass
 class Voting:
     poll_id: str
@@ -106,11 +96,6 @@ async def dynamo_client():
 #####
 
 
-N = 'N'
-S = 'S'
-NS = 'NS'
-
-
 async def dynamo_put(client, table, item):
     await client.put_item(
         TableName=table,
@@ -118,44 +103,35 @@ async def dynamo_put(client, table, item):
     )
 
 
-async def dynamo_get(client, table, key_name, key_type, key_value):
+async def dynamo_get(client, table, key_name, key_type, value):
     response = await client.get_item(
         TableName=table,
         Key={
             key_name: {
-                key_type: str(key_value)
+                key_type: str(value)
             }
         }
     )
     return response.get('Item')
 
 
-async def dynamo_delete(client, table, key_name, key_type, key_value):
+async def dynamo_delete(client, table, key_name, key_type, value):
     await client.delete_item(
         TableName=table,
         Key={
             key_name: {
-                key_type: str(key_value)
+                key_type: str(value)
             }
         }
     )
 
 
 ######
-#   DE/SERIALIZE
+#   DE/SER
 ####
 
 
-def dynamo_type(annot):
-    if annot == int:
-        return N
-    elif annot == str:
-        return S
-    elif annot == [int]:
-        return NS
-
-
-def dynamo_parse_value(value, annot):
+def dynamo_deser_value(value, annot):
     if annot == int:
         return int(value)
     elif annot == str:
@@ -164,7 +140,7 @@ def dynamo_parse_value(value, annot):
         return [int(_) for _ in value]
 
 
-def dynamo_format_value(value, annot):
+def dynamo_ser_value(value, annot):
     if annot == int:
         return str(value)
     elif annot == str:
@@ -173,23 +149,37 @@ def dynamo_format_value(value, annot):
         return [str(_) for _ in value]
 
 
-def dynamo_parse_item(item, cls):
+def obj_annots(obj):
+    for field in fields(obj):
+        yield field.name, field.type
+
+
+def annot_key_type(annot):
+    if annot == int:
+        return 'N'
+    elif annot == str:
+        return 'S'
+    elif annot == [int]:
+        return 'NS'
+
+
+def dynamo_deser_item(item, cls):
     kwargs = {}
-    for name, annot in obj_annots(cls):
-        type = dynamo_type(annot)
-        value = item[name][type]
-        value = dynamo_parse_value(value, annot)
-        kwargs[name] = value
+    for key_name, annot in obj_annots(cls):
+        key_type = annot_key_type(annot)
+        value = item[key_name][key_type]
+        value = dynamo_deser_value(value, annot)
+        kwargs[key_name] = value
     return cls(**kwargs)
 
 
-def dynamo_format_item(obj):
+def dynamo_ser_item(obj):
     item = {}
-    for name, annot in obj_annots(obj):
-        value = getattr(obj, name)
-        value = dynamo_format_value(value, annot)
-        type = dynamo_type(annot)
-        item[name] = {type: value}
+    for key_name, annot in obj_annots(obj):
+        value = getattr(obj, key_name)
+        value = dynamo_ser_value(value, annot)
+        key_type = annot_key_type(annot)
+        item[key_name] = {key_type: value}
     return item
 
 
@@ -198,29 +188,26 @@ def dynamo_format_item(obj):
 ######
 
 
-VOTINGS_TABLE = 'votings'
-POLL_ID_KEY = 'poll_id'
-
-
 async def put_voting(db, voting):
-    item = dynamo_format_item(voting)
-    await dynamo_put(db.client, VOTINGS_TABLE, item)
+    item = dynamo_ser_item(voting)
+    await dynamo_put(db.client, 'votings', item)
 
 
 async def get_voting(db, poll_id):
     item = await dynamo_get(
-        db.client, VOTINGS_TABLE,
-        POLL_ID_KEY, S, poll_id
+        db.client, 'votings',
+        'poll_id', 'S', poll_id
     )
     if not item:
         return
-    return dynamo_parse_item(item, Voting)
+
+    return dynamo_deser_item(item, Voting)
 
 
 async def delete_voting(db, poll_id):
     await dynamo_delete(
-        db.client, VOTINGS_TABLE,
-        POLL_ID_KEY, S, poll_id
+        db.client, 'votings',
+        'poll_id', 'S', poll_id
     )
 
 
