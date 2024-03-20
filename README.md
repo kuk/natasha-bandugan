@@ -9,6 +9,13 @@
 
 ## Разработка
 
+Создать Virtualenv.
+
+```bash
+python -m venv .venv
+direnv allow .
+```
+
 Создать директорию в YC.
 
 ```bash
@@ -58,7 +65,6 @@ document_api_endpoint: {DYNAMO_ENDPOINT}
 Установить, настроить `aws`.
 
 ```bash
-pip install awscli==1.29.27
 aws configure --profile natasha-bandugan
 
 {AWS_KEY_ID}
@@ -149,20 +155,11 @@ WEBHOOK_URL=https://${CONTAINER_ID}.containers.yandexcloud.net/
 curl --url https://api.telegram.org/bot${BOT_TOKEN}/setWebhook\?url=${WEBHOOK_URL}
 ```
 
-Создать окружение, установить кернел.
+Установить Jupyter kernel.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-
 pip install ipykernel
 python -m ipykernel install --user --name natasha-bandugan
-```
-
-Трюк чтобы загрузить окружение из `.env`.
-
-```bash
-export $(cat .env | xargs)
 ```
 
 Установить зависимости для бота.
@@ -177,10 +174,11 @@ pip install \
 
 ```bash
 pip install \
-  pytest-aiohttp \
-  pytest-asyncio \
-  pytest-flakes \
-  pytest-pycodestyle
+  pytest==8.1.1 \
+  pytest-aiohttp==1.0.5 \
+  pytest-asyncio==0.23.6 \
+  pytest-flakes==4.0.5 \
+  pytest-pycodestyle==2.3.1
 ```
 
 Прогнать линтер, тесты.
