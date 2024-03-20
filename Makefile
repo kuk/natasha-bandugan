@@ -8,9 +8,6 @@ test-lint:
 test-key:
 	pytest -vv --asyncio-mode=auto -s -k $(KEY) test.py
 
-test-cov:
-	pytest -vv --asyncio-mode=auto --cov-report html --cov main test.py
-
 image:
 	docker build -t $(IMAGE) .
 

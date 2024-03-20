@@ -179,7 +179,6 @@ pip install \
 pip install \
   pytest-aiohttp \
   pytest-asyncio \
-  pytest-cov \
   pytest-flakes \
   pytest-pycodestyle
 ```
