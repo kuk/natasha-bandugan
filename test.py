@@ -180,7 +180,7 @@ async def test_start_voting(context):
         ['sendPoll',  '{"chat_id": -1001712750774, "question": "Забанить'],
     ])
     assert context.db.votings == [
-        Voting(poll_id='123', chat_id=123, candidate_message_id=3, poll_message_id=1, start_message_id=4, starter_user_id=113947584, candidate_user_id=5428138451, ban_user_ids=[], no_ban_user_ids=[], min_votes=1)
+        Voting(poll_id='123', chat_id=123, candidate_message_id=3, poll_message_id=1, start_message_id=4, starter_user_id=113947584, candidate_user_id=5428138451, ban_user_ids=[], no_ban_user_ids=[], min_votes=10)
     ]
 
 
