@@ -224,17 +224,6 @@ async def test_no_ban_vote(context):
     assert voting.no_ban_user_ids == [113947584]
 
 
-async def test_no_ban_vote(context):
-    context.db.votings = [INIT_VOTING]
-    await process_update(context, VOTE_JSON.replace('[0]', '[1]'))
-    assert match_trace(context.bot.trace, [
-        ['deleteMessage', '{"chat_id": 123, "message_id": 4}'],
-        ['deleteMessage', '{"chat_id": 123, "message_id": 1}']
-    ])
-    voting = await context.db.get_voting(INIT_VOTING.poll_id)
-    assert voting.no_ban_user_ids == [113947584]
-
-
 async def test_revote(context):
     context.db.votings = [
         replace(INIT_VOTING, min_votes=2)
