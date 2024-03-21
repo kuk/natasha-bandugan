@@ -370,6 +370,25 @@ async def handle_poll_vote(context, poll_answer):
 def setup_handlers(context):
     context.dispatcher.register_message_handler(context.handle_start_voting)
     context.dispatcher.register_poll_answer_handler(context.handle_poll_vote)
+########
+#
+#   MIDDLEWARE
+#
+#####
+
+
+def log(message):
+    print(message, file=sys.stderr, flush=True)
+
+
+class LoggingMiddleware(BaseMiddleware):
+    async def on_pre_process_update(self, update, data):
+        log(update)
+
+
+def setup_middlewares(context):
+    middleware = LoggingMiddleware()
+    context.dispatcher.middleware.setup(middleware)
 
 
 #######
