@@ -25,6 +25,8 @@ from main import (
     BotContext,
 
     Voting,
+
+    CHAT_ID,
 )
 
 
@@ -139,6 +141,7 @@ class FakeBotContext(BotContext):
 def context():
     context = FakeBotContext()
     context.setup_handlers()
+    context.setup_middlewares()
 
     Bot.set_current(context.bot)
     Dispatcher.set_current(context.dispatcher)
@@ -166,11 +169,24 @@ def match_trace(trace, etalon):
     return True
 
 
-START_VOTING_JSON = '{"message": {"message_id": 4, "from": {"id": 113947584, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin", "username": "alexkuk", "language_code": "ru"}, "chat": {"id": -1001712750774, "title": "bandugan_bot_test_chat", "username": "bandugan_bot_test_chat", "type": "supergroup"}, "date": 1658923577, "reply_to_message": {"message_id": 3, "from": {"id": 5428138451, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin"}, "chat": {"id": -1001712750774, "title": "bandugan_bot_test_chat", "username": "bandugan_bot_test_chat", "type": "supergroup"}, "date": 1658923525, "text": "abc"}, "text": "/voteban", "entities": [{"type": "bot_command", "offset": 0, "length": 8}]}}'
+def my_chat_member_json(chat_id):
+    return '{"my_chat_member": {"chat": {"id": %d, "title": "test_bot_chat3", "type": "group", "all_members_are_administrators": true}, "from": {"id": 113947584, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin", "username": "alexkuk", "language_code": "ru"}, "date": 1711016747, "old_chat_member": {"user": {"id": 5415060021, "is_bot": true, "first_name": "Bandugan", "username": "bandugan_bot"}, "status": "left"}, "new_chat_member": {"user": {"id": 5415060021, "is_bot": true, "first_name": "Bandugan", "username": "bandugan_bot"}, "status": "member"}}}' % chat_id
+
+
+async def test_leave_chat(context):
+    await process_update(context, my_chat_member_json(CHAT_ID))
+    await process_update(context, my_chat_member_json(-1))
+    assert match_trace(context.bot.trace, [
+        ['leaveChat', '{"chat_id": -1}']
+    ])
+
+
+def message_json(message_text):
+    return '{"message": {"message_id": 4, "from": {"id": 113947584, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin", "username": "alexkuk", "language_code": "ru"}, "chat": {"id": -1001712750774, "title": "bandugan_bot_test_chat", "username": "bandugan_bot_test_chat", "type": "supergroup"}, "date": 1658923577, "reply_to_message": {"message_id": 3, "from": {"id": 5428138451, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin"}, "chat": {"id": -1001712750774, "title": "bandugan_bot_test_chat", "username": "bandugan_bot_test_chat", "type": "supergroup"}, "date": 1658923525, "text": "abc"}, "text": "%s", "entities": [{"type": "bot_command", "offset": 0, "length": 8}]}}' % message_text
 
 
 async def test_start_voting(context):
-    await process_update(context, START_VOTING_JSON)
+    await process_update(context, message_json('/voteban'))
     assert match_trace(context.bot.trace, [
         ['getChatMember', '{"chat_id": -1001712750774, "user_id": 5428138451}'],
         ['sendPoll',  '{"chat_id": -1001712750774, "question": "Забанить'],
@@ -182,7 +198,7 @@ async def test_start_voting(context):
 
 async def test_ban_admin(context):
     context.bot.admin_chat_member = True
-    await process_update(context, START_VOTING_JSON)
+    await process_update(context, message_json('/voteban'))
     assert match_trace(context.bot.trace, [
         ['getChatMember', '{"chat_id": -1001712750774, "user_id": 5428138451}'],
         ['sendMessage', '{"chat_id": -1001712750774, "text": "Alexander Kukushkin админ"}']

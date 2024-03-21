@@ -1,4 +1,5 @@
 
+import sys
 from os import getenv
 from dataclasses import (
     dataclass,
@@ -13,13 +14,14 @@ from aiogram import (
     exceptions
 )
 from aiogram.types import ChatMemberStatus
+from aiogram.dispatcher.middlewares import BaseMiddleware
 
 import aiobotocore.session
 
 
 #######
 #
-#   SECRETS
+#   ENV
 #
 ######
 
@@ -32,6 +34,8 @@ AWS_KEY_ID = getenv('AWS_KEY_ID')
 AWS_KEY = getenv('AWS_KEY')
 
 DYNAMO_ENDPOINT = getenv('DYNAMO_ENDPOINT')
+
+CHAT_ID = int(getenv('CHAT_ID'))
 
 
 ######
@@ -262,7 +266,16 @@ IS_ADMIN_TEXT = '{mention} админ'
 MIN_VOTES = 10
 
 
-async def handle_start_voting(context, message):
+async def handle_my_chat_member(context, update):
+    if (
+            update.old_chat_member.status != 'member'
+            and update.new_chat_member.status == 'member'
+            and update.chat.id != CHAT_ID
+    ):
+        await context.bot.leave_chat(update.chat.id)
+
+
+async def handle_message(context, message):
     if not message.reply_to_message:
         return
 
@@ -324,7 +337,7 @@ async def safe_delete_message(bot, **kwargs):
         return
 
 
-async def handle_poll_vote(context, poll_answer):
+async def handle_poll_answer(context, poll_answer):
     voting = await context.db.get_voting(poll_answer.poll_id)
 
     # revote
@@ -368,8 +381,17 @@ async def handle_poll_vote(context, poll_answer):
 
 
 def setup_handlers(context):
-    context.dispatcher.register_message_handler(context.handle_start_voting)
-    context.dispatcher.register_poll_answer_handler(context.handle_poll_vote)
+    context.dispatcher.register_my_chat_member_handler(
+        context.handle_my_chat_member
+    )
+    context.dispatcher.register_message_handler(
+        context.handle_message
+    )
+    context.dispatcher.register_poll_answer_handler(
+        context.handle_poll_answer
+    )
+
+
 ########
 #
 #   MIDDLEWARE
@@ -442,10 +464,12 @@ class BotContext:
         self.db = DB()
 
 
-BotContext.handle_start_voting = handle_start_voting
-BotContext.handle_poll_vote = handle_poll_vote
+BotContext.handle_my_chat_member = handle_my_chat_member
+BotContext.handle_message = handle_message
+BotContext.handle_poll_answer = handle_poll_answer
 
 BotContext.setup_handlers = setup_handlers
+BotContext.setup_middlewares = setup_middlewares
 
 BotContext.on_startup = on_startup
 BotContext.on_shutdown = on_shutdown
@@ -462,4 +486,5 @@ BotContext.run = run
 if __name__ == '__main__':
     context = BotContext()
     context.setup_handlers()
+    context.setup_middlewares()
     context.run()

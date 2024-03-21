@@ -1,5 +1,6 @@
 IMAGE = natasha-bandugan
 REGISTRY = cr.yandex/$(REGISTRY_ID)
+REMOTE = $(REGISTRY)/$(IMAGE)
 
 test-lint:
 	pytest -vv --asyncio-mode=auto --pycodestyle --flakes main.py
@@ -26,5 +27,6 @@ deploy:
 		--environment AWS_KEY_ID=$(AWS_KEY_ID) \
 		--environment AWS_KEY=$(AWS_KEY) \
 		--environment DYNAMO_ENDPOINT=$(DYNAMO_ENDPOINT) \
+		--environment CHAT_ID=$(CHAT_ID) \
 		--service-account-id $(SERVICE_ACCOUNT_ID) \
 		--folder-name natasha-bandugan
