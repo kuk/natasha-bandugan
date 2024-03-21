@@ -268,8 +268,8 @@ MIN_VOTES = 10
 
 async def handle_my_chat_member(context, update):
     if (
-            update.old_chat_member.status != 'member'
-            and update.new_chat_member.status == 'member'
+            update.old_chat_member.status == ChatMemberStatus.LEFT
+            and ChatMemberStatus.is_chat_member(update.new_chat_member.status)
             and update.chat.id != CHAT_ID
     ):
         await context.bot.leave_chat(update.chat.id)
