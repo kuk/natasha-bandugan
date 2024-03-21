@@ -276,6 +276,9 @@ async def handle_my_chat_member(context, update):
 
 
 async def handle_message(context, message):
+    if message.chat.id != CHAT_ID:
+        return
+
     if not message.reply_to_message:
         return
 
