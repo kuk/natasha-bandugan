@@ -142,10 +142,24 @@ yc serverless container allow-unauthenticated-invoke default \
   --folder-name natasha-bandugan
 ```
 
-Логи.
+Мониторить логи.
 
 ```bash
-yc log read default --follow --folder-name natasha-bandugan
+yc log read default \
+  --filter 'json_payload.source = "user"' \
+  --follow \
+  --folder-name natasha-bandugan
+```
+
+Последние 1000 записей.
+
+```bash
+yc log read default \
+  --filter 'json_payload.source = "user"' \
+  --limit 1000 \
+  --since 2020-01-01T00:00:00Z \
+  --until 2030-01-01T00:00:00Z \
+  --folder-name natasha-bandugan
 ```
 
 Прицепить вебхук.
