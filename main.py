@@ -5,6 +5,7 @@ from dataclasses import (
     dataclass,
     fields
 )
+import asyncio
 from contextlib import AsyncExitStack
 
 from aiogram import (
@@ -262,7 +263,9 @@ OPTION_TEXTS = [
 ]
 
 IS_ADMIN_TEXT = '{mention} админ'
+USE_REPLY_TEXT = 'Напиши это в реплае на спам'
 
+READ_DELAY = 5
 MIN_VOTES = 10
 
 
@@ -275,14 +278,43 @@ async def handle_my_chat_member(context, update):
         await context.bot.leave_chat(update.chat.id)
 
 
+async def safe_ban_chat_member(bot, **kwargs):
+    try:
+        await bot.ban_chat_member(**kwargs)
+    except exceptions.BadRequest:  # Participant_id_invalid
+        return
+
+
+async def safe_delete_message(bot, **kwargs):
+    try:
+        await bot.delete_message(**kwargs)
+    except exceptions.MessageToDeleteNotFound:
+        return
+
+
+async def answer_delay_cleanup(context, orig_message, text):
+    answer_message = await orig_message.answer(text=text)
+    await context.sleep(READ_DELAY)
+    for message in [orig_message, answer_message]:
+        await safe_delete_message(
+            context.bot,
+            chat_id=message.chat.id,
+            message_id=message.message_id
+        )
+
+
 async def handle_message(context, message):
-    if message.chat.id != CHAT_ID:
+    if (
+            message.chat.id != CHAT_ID
+            or message.text not in START_TEXTS
+    ):
         return
 
     if not message.reply_to_message:
-        return
-
-    if message.text not in START_TEXTS:
+        await answer_delay_cleanup(
+            context, message,
+            text=USE_REPLY_TEXT
+        )
         return
 
     candidate_message_id = message.reply_to_message.message_id
@@ -293,7 +325,8 @@ async def handle_message(context, message):
         user_id=candidate_user.id
     )
     if ChatMemberStatus.is_chat_admin(member.status):
-        await message.answer(
+        await answer_delay_cleanup(
+            context, message,
             text=IS_ADMIN_TEXT.format(
                 mention=candidate_user.mention
             )
@@ -331,20 +364,6 @@ async def handle_message(context, message):
         min_votes=MIN_VOTES,
     )
     await context.db.put_voting(voting)
-
-
-async def safe_ban_chat_member(bot, **kwargs):
-    try:
-        await bot.ban_chat_member(**kwargs)
-    except exceptions.BadRequest:  # Participant_id_invalid
-        return
-
-
-async def safe_delete_message(bot, **kwargs):
-    try:
-        await bot.delete_message(**kwargs)
-    except exceptions.MessageToDeleteNotFound:
-        return
 
 
 async def handle_poll_answer(context, poll_answer):
@@ -473,6 +492,8 @@ class BotContext:
         self.bot = Bot(token=BOT_TOKEN)
         self.dispatcher = Dispatcher(self.bot)
         self.db = DB()
+
+        self.sleep = asyncio.sleep
 
 
 BotContext.handle_my_chat_member = handle_my_chat_member
