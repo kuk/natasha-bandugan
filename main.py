@@ -17,6 +17,7 @@ from aiogram import (
 from aiogram.types import ChatMemberStatus
 from aiogram.dispatcher.middlewares import BaseMiddleware
 
+import aiohttp
 import aiobotocore.session
 
 
@@ -37,6 +38,8 @@ AWS_KEY = getenv('AWS_KEY')
 DYNAMO_ENDPOINT = getenv('DYNAMO_ENDPOINT')
 
 CHAT_ID = int(getenv('CHAT_ID'))
+
+MODER_API_TOKEN = getenv('MODER_API_TOKEN')
 
 
 ######
@@ -283,6 +286,76 @@ DB.get_user_stats = get_user_stats
 DB.delete_user_stats = delete_user_stats
 
 
+######
+#
+#   MODER
+#
+#####
+
+
+class Moder:
+    def __init__(self, api_token=MODER_API_TOKEN):
+        self.api_token = api_token
+        self.session = aiohttp.ClientSession()
+
+    async def close(self):
+        await self.session.close()
+
+
+class ModerError(Exception):
+    pass
+
+
+@dataclass
+class ModerPred:
+    is_spam: bool
+    confidence: float
+
+
+async def predict(moder, text):
+    try:
+        response = await moder.session.post(
+            'http://pywebsolutions.ru:30/predict',
+            timeout=10,
+            json={
+                'api_token': moder.api_token,
+                'text': text,
+                'model': 'bert'
+            }
+        )
+    except (
+            aiohttp.ClientError,
+            asyncio.TimeoutError
+    ) as error:
+        raise ModerError(str(error))
+
+    if response.status != 200:
+        raise ModerError(await response.text())
+
+    # {
+    #   "class": 0,
+    #   "time_taken": 0.041809797286987305,
+    #   "class_names": {
+    #     "0": "not spam",
+    #     "1": "spam"
+    #   },
+    #   "confidence": 73.92,
+    #   "unique_id": "rcVskO5aGy5DPyp-Lj-",
+    #   "balance": 199.60000000000002,
+    #   "server_id": 1,
+    #   "status": "ok"
+    # }
+
+    data = await response.json()
+    return ModerPred(
+        is_spam=data['class'] == 1,
+        confidence=data['confidence']
+    )
+
+
+Moder.predict = predict
+
+
 #####
 #
 #  HANDLERS
@@ -517,6 +590,7 @@ async def on_startup(context, _):
 
 async def on_shutdown(context, _):
     await context.db.close()
+    await context.moder.close()
 
 
 PORT = getenv('PORT', 8080)
@@ -548,8 +622,9 @@ class BotContext:
         self.bot = Bot(token=BOT_TOKEN)
         self.dispatcher = Dispatcher(self.bot)
         self.db = DB()
+        self.moder = Moder()
 
-        self.sleep = asyncio.sleep
+    sleep = asyncio.sleep
 
 
 BotContext.handle_my_chat_member = handle_my_chat_member

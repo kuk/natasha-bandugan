@@ -187,7 +187,8 @@ curl --url https://api.telegram.org/bot${BOT_TOKEN}/setWebhook\?url=${WEBHOOK_UR
 ```bash
 pip install \
   aiogram==2.21 \
-  aiobotocore==2.3.4
+  aiobotocore==2.3.4 \
+  aiohttp==3.8.6
 ```
 
 Установить зависимости для тестов.

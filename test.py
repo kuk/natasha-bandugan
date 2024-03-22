@@ -22,6 +22,7 @@ from main import (
     ChatMemberStatus,
 
     DB,
+    Moder,
     BotContext,
 
     Voting,
@@ -84,6 +85,26 @@ async def test_db_user_stats(db):
 
     await db.delete_user_stats(user_stats.key)
     assert await db.get_user_stats(user_stats.key) is None
+
+
+######
+#
+#   MODER
+#
+####
+
+
+@pytest.fixture(scope='function')
+async def moder():
+    moder = Moder()
+    yield moder
+    await moder.close()
+
+
+async def test_moder(moder):
+    pred = await moder.predict('добавляйся к нам в группу, зарабатывай на крипте зарабатывай на крипте зарабатывай на крипте')
+    assert pred.is_spam
+    assert pred.confidence > 0.5
 
 
 #######
@@ -237,7 +258,7 @@ async def test_pass(context):
 async def test_user_stats(context):
     await process_update(context, message_json(CHAT_ID, 'сап'))
     assert context.db.user_stats == [
-        UserStats(chat_id=-1001121514187, user_id=694057347, message_count=1)
+        UserStats(chat_id=CHAT_ID, user_id=694057347, message_count=1)
     ]
 
 
