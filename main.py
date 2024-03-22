@@ -38,6 +38,7 @@ AWS_KEY = getenv('AWS_KEY')
 DYNAMO_ENDPOINT = getenv('DYNAMO_ENDPOINT')
 
 CHAT_ID = int(getenv('CHAT_ID'))
+ADMIN_ID = int(getenv('ADMIN_ID'))
 
 MODER_API_TOKEN = getenv('MODER_API_TOKEN')
 
@@ -356,6 +357,13 @@ async def predict(moder, text):
 Moder.predict = predict
 
 
+async def safe_predict(moder, *args):
+    try:
+        return await moder.predict(*args)
+    except ModerError:
+        return
+
+
 #####
 #
 #  HANDLERS
@@ -363,7 +371,7 @@ Moder.predict = predict
 #####
 
 
-START_TEXTS = [
+VOTEBAN_TEXTS = [
     '/voteban',
     '/voteban@bandugan_bot',
     '@bandugan_bot',
@@ -436,7 +444,16 @@ async def handle_message(context, message):
     user_stats.message_count += 1
     await context.db.put_user_stats(user_stats)
 
-    if message.text not in START_TEXTS:
+    if user_stats.message_count < 10:
+        pred = await safe_predict(context.moder, message.text)
+        if pred and pred.is_spam:
+            await context.bot.forward_message(
+                chat_id=ADMIN_ID,
+                from_chat_id=chat_id,
+                message_id=message.message_id
+            )
+
+    if message.text not in VOTEBAN_TEXTS:
         return
 
     if not message.reply_to_message:

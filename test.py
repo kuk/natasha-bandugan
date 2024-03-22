@@ -22,13 +22,14 @@ from main import (
     ChatMemberStatus,
 
     DB,
-    Moder,
+    Moder, ModerPred,
     BotContext,
 
     Voting,
     UserStats,
 
     CHAT_ID,
+    ADMIN_ID,
 )
 
 
@@ -189,11 +190,23 @@ class FakeDB(DB):
         ]
 
 
+class FakeModer(Moder):
+    def __init__(self):
+        self.pred = ModerPred(
+            is_spam=False,
+            confidence=1.0
+        )
+
+    async def predict(self, text):
+        return self.pred
+
+
 class FakeBotContext(BotContext):
     def __init__(self):
         self.bot = FakeBot('1:faketoken')
         self.dispatcher = Dispatcher(self.bot)
         self.db = FakeDB()
+        self.moder = FakeModer()
 
     async def sleep(self, delay):
         pass
@@ -270,6 +283,14 @@ async def test_use_reply(context):
         ['deleteMessage', '{"chat_id": -1, "message_id": 1}']
     ])
     
+
+async def test_auto_delete(context):
+    context.moder.pred.is_spam = True
+    await process_update(context, message_json(CHAT_ID, 'крипто скамерский скам'))
+    assert match_trace(context.bot.trace, [
+        ['forwardMessage', '{"chat_id": %d, "from_chat_id": %d, "message_id": 91642}' % (ADMIN_ID, CHAT_ID)]
+    ])
+
 
 def reply_message_json(message_text):
     return '{"message": {"message_id": 4, "from": {"id": 113947584, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin", "username": "alexkuk", "language_code": "ru"}, "chat": {"id": %d, "title": "bandugan_bot_test_chat", "username": "bandugan_bot_test_chat", "type": "supergroup"}, "date": 1658923577, "reply_to_message": {"message_id": 3, "from": {"id": 5428138451, "is_bot": false, "first_name": "Alexander", "last_name": "Kukushkin"}, "chat": {"id": -1001712750774, "title": "bandugan_bot_test_chat", "username": "bandugan_bot_test_chat", "type": "supergroup"}, "date": 1658923525, "text": "abc"}, "text": "%s", "entities": [{"type": "bot_command", "offset": 0, "length": 8}]}}' % (CHAT_ID, message_text)
