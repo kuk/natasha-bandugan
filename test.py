@@ -135,20 +135,36 @@ class FakeDB(DB):
     def __init__(self):
         DB.__init__(self)
         self.votings = []
+        self.user_stats = []
 
-    async def put_voting(self, voting):
-        await self.delete_voting(voting.poll_id)
-        self.votings.append(voting)
+    async def put_voting(self, obj):
+        await self.delete_voting(obj.poll_id)
+        self.votings.append(obj)
 
     async def get_voting(self, poll_id):
-        for voting in self.votings:
-            if voting.poll_id == poll_id:
-                return voting
+        for obj in self.votings:
+            if obj.poll_id == poll_id:
+                return obj
 
     async def delete_voting(self, poll_id):
         self.votings = [
             _ for _ in self.votings
             if _.poll_id != poll_id
+        ]
+
+    async def put_user_stats(self, obj):
+        await self.delete_user_stats(obj.key)
+        self.user_stats.append(obj)
+
+    async def get_user_stats(self, key):
+        for obj in self.user_stats:
+            if obj.key == key:
+                return obj
+
+    async def delete_user_stats(self, key):
+        self.user_stats = [
+            _ for _ in self.user_stats
+            if _.key != key
         ]
 
 
@@ -216,6 +232,13 @@ async def test_pass(context):
 
     await process_update(context, message_json(-1, '/voteban'))
     assert match_trace(context.bot.trace, [])
+
+
+async def test_user_stats(context):
+    await process_update(context, message_json(CHAT_ID, 'сап'))
+    assert context.db.user_stats == [
+        UserStats(chat_id=-1001121514187, user_id=694057347, message_count=1)
+    ]
 
 
 async def test_use_reply(context):

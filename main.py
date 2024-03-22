@@ -349,10 +349,21 @@ async def answer_delay_cleanup(context, orig_message, text):
 
 
 async def handle_message(context, message):
-    if (
-            message.chat.id != CHAT_ID
-            or message.text not in START_TEXTS
-    ):
+    chat_id = message.chat.id
+    if chat_id != CHAT_ID:
+        return
+
+    user_id = message.from_user.id
+    user_stats = await context.db.get_user_stats((chat_id, user_id))
+    if not user_stats:
+        user_stats = UserStats(
+            chat_id, user_id,
+            message_count=0
+        )
+    user_stats.message_count += 1
+    await context.db.put_user_stats(user_stats)
+
+    if message.text not in START_TEXTS:
         return
 
     if not message.reply_to_message:
