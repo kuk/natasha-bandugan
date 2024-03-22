@@ -83,12 +83,25 @@ aws dynamodb create-table \
     AttributeName=poll_id,KeyType=HASH \
   --endpoint $DYNAMO_ENDPOINT \
   --profile natasha-bandugan
+
+aws dynamodb create-table \
+  --table-name user_stats \
+  --attribute-definitions \
+    AttributeName=key,AttributeType=S \
+  --key-schema \
+    AttributeName=key,KeyType=HASH \
+  --endpoint $DYNAMO_ENDPOINT \
+  --profile natasha-bandugan
 ```
 
 Удалить таблички.
 
 ```bash
 aws dynamodb delete-table --table-name votings \
+  --endpoint $DYNAMO_ENDPOINT \
+  --profile natasha-bandugan
+
+aws dynamodb delete-table --table-name user_stats \
   --endpoint $DYNAMO_ENDPOINT \
   --profile natasha-bandugan
 ```

@@ -25,6 +25,7 @@ from main import (
     BotContext,
 
     Voting,
+    UserStats,
 
     CHAT_ID,
 )
@@ -65,10 +66,24 @@ async def test_db_votings(db):
     )
 
     await db.put_voting(voting)
-    assert voting == await db.get_voting(poll_id=voting.poll_id)
+    assert voting == await db.get_voting(voting.poll_id)
 
-    await db.delete_voting(poll_id=voting.poll_id)
-    assert await db.get_voting(poll_id=voting.poll_id) is None
+    await db.delete_voting(voting.poll_id)
+    assert await db.get_voting(voting.poll_id) is None
+
+
+async def test_db_user_stats(db):
+    user_stats = UserStats(
+        chat_id=-1,
+        user_id=-1,
+        message_count=1
+    )
+
+    await db.put_user_stats(user_stats)
+    assert user_stats == await db.get_user_stats(user_stats.key)
+
+    await db.delete_user_stats(user_stats.key)
+    assert await db.get_user_stats(user_stats.key) is None
 
 
 #######

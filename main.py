@@ -64,6 +64,17 @@ class Voting:
     min_votes: int
 
 
+@dataclass
+class UserStats:
+    chat_id: int
+    user_id: int
+    message_count: int
+
+    @property
+    def key(self):
+        return self.chat_id, self.user_id
+
+
 ######
 #
 #  DYNAMO
@@ -188,31 +199,61 @@ def dynamo_ser_item(obj):
     return item
 
 
+# On DynamoDB partition key
+# https://aws.amazon.com/ru/blogs/database/choosing-the-right-dynamodb-partition-key/
+
+
+def dynamo_ser_key(parts):
+    return '#'.join(
+        str(_) for _ in parts
+    )
+
+
 ######
 #   READ/WRITE
 ######
 
 
-async def put_voting(db, voting):
-    item = dynamo_ser_item(voting)
+async def put_voting(db, obj):
+    item = dynamo_ser_item(obj)
     await dynamo_put(db.client, 'votings', item)
 
 
-async def get_voting(db, poll_id):
+async def get_voting(db, key):
     item = await dynamo_get(
         db.client, 'votings',
-        'poll_id', 'S', poll_id
+        'poll_id', 'S', key
     )
-    if not item:
-        return
-
-    return dynamo_deser_item(item, Voting)
+    if item:
+        return dynamo_deser_item(item, Voting)
 
 
-async def delete_voting(db, poll_id):
+async def delete_voting(db, key):
     await dynamo_delete(
         db.client, 'votings',
-        'poll_id', 'S', poll_id
+        'poll_id', 'S', key
+    )
+
+
+async def put_user_stats(db, obj):
+    item = dynamo_ser_item(obj)
+    item['key'] = {'S': dynamo_ser_key(obj.key)}
+    await dynamo_put(db.client, 'user_stats', item)
+
+
+async def get_user_stats(db, key):
+    item = await dynamo_get(
+        db.client, 'user_stats',
+        'key', 'S', dynamo_ser_key(key)
+    )
+    if item:
+        return dynamo_deser_item(item, UserStats)
+
+
+async def delete_user_stats(db, key):
+    await dynamo_delete(
+        db.client, 'user_stats',
+        'key', 'S', dynamo_ser_key(key)
     )
 
 
@@ -236,6 +277,10 @@ class DB:
 DB.put_voting = put_voting
 DB.get_voting = get_voting
 DB.delete_voting = delete_voting
+
+DB.put_user_stats = put_user_stats
+DB.get_user_stats = get_user_stats
+DB.delete_user_stats = delete_user_stats
 
 
 #####
