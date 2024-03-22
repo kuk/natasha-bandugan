@@ -98,6 +98,7 @@ async def test_db_user_stats(db):
 @pytest.fixture(scope='function')
 async def moder():
     moder = Moder()
+    await moder.connect()
     yield moder
     await moder.close()
 
@@ -288,6 +289,7 @@ async def test_auto_delete(context):
     context.moder.pred.is_spam = True
     await process_update(context, message_json(CHAT_ID, 'крипто скамерский скам'))
     assert match_trace(context.bot.trace, [
+        ['sendMessage', '{"chat_id": %d, "text": "moder ban, confidence=1.0"}' % ADMIN_ID],
         ['forwardMessage', '{"chat_id": %d, "from_chat_id": %d, "message_id": 91642}' % (ADMIN_ID, CHAT_ID)]
     ])
 
@@ -335,6 +337,8 @@ async def test_ban_vote(context):
     await process_update(context, poll_answer_json(0))
     assert match_trace(context.bot.trace, [
         ['banChatMember', '{"chat_id": -1, "user_id": 5428138451'],
+        ['sendMessage', '{"chat_id": %d, "text": "voting ban"}' % ADMIN_ID],
+        ['forwardMessage', '{"chat_id": %d, "from_chat_id": -1, "message_id": 2}' % ADMIN_ID],
         ['deleteMessage', '{"chat_id": -1, "message_id": 2}'],
         ['deleteMessage', '{"chat_id": -1, "message_id": 4}'],
         ['deleteMessage', '{"chat_id": -1, "message_id": 1}']

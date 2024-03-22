@@ -267,10 +267,6 @@ async def delete_user_stats(db, key):
 
 
 class DB:
-    def __init__(self):
-        self.exit_stack = None
-        self.client = None
-
     async def connect(self):
         self.exit_stack, self.client = await dynamo_client()
 
@@ -297,6 +293,8 @@ DB.delete_user_stats = delete_user_stats
 class Moder:
     def __init__(self, api_token=MODER_API_TOKEN):
         self.api_token = api_token
+
+    async def connect(self):
         self.session = aiohttp.ClientSession()
 
     async def close(self):
@@ -391,6 +389,9 @@ OPTION_TEXTS = [
 IS_ADMIN_TEXT = '{mention} админ'
 USE_REPLY_TEXT = 'Напиши /voteban в реплае на спам'
 
+MODER_BAN_TEXT = 'moder ban, confidence={confidence}'
+VOTING_BAN_TEXT = 'voting ban'
+
 READ_DELAY = 5
 MIN_VOTES = 10
 
@@ -415,6 +416,13 @@ async def safe_delete_message(bot, **kwargs):
     try:
         await bot.delete_message(**kwargs)
     except exceptions.MessageToDeleteNotFound:
+        return
+
+
+async def safe_forward_message(bot, **kwargs):
+    try:
+        await bot.forward_message(**kwargs)
+    except exceptions.MessageToForwardNotFound:
         return
 
 
@@ -447,7 +455,14 @@ async def handle_message(context, message):
     if user_stats.message_count < 10:
         pred = await safe_predict(context.moder, message.text)
         if pred and pred.is_spam:
-            await context.bot.forward_message(
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=MODER_BAN_TEXT.format(
+                    confidence=pred.confidence
+                )
+            )
+            await safe_forward_message(
+                context.bot,
                 chat_id=ADMIN_ID,
                 from_chat_id=chat_id,
                 message_id=message.message_id
@@ -540,6 +555,16 @@ async def handle_poll_answer(context, poll_answer):
                 chat_id=voting.chat_id,
                 user_id=voting.candidate_user_id,
             )
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=VOTING_BAN_TEXT
+            )
+            await safe_forward_message(
+                context.bot,
+                chat_id=ADMIN_ID,
+                from_chat_id=voting.chat_id,
+                message_id=voting.candidate_message_id
+            )
             await safe_delete_message(
                 context.bot,
                 chat_id=voting.chat_id,
@@ -603,6 +628,7 @@ def setup_middlewares(context):
 
 async def on_startup(context, _):
     await context.db.connect()
+    await context.moder.connect()
 
 
 async def on_shutdown(context, _):

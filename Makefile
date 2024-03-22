@@ -28,5 +28,6 @@ deploy:
 		--environment AWS_KEY=$(AWS_KEY) \
 		--environment DYNAMO_ENDPOINT=$(DYNAMO_ENDPOINT) \
 		--environment CHAT_ID=$(CHAT_ID) \
+		--environment ADMIN_ID=$(ADMIN_ID) \
 		--service-account-id $(SERVICE_ACCOUNT_ID) \
 		--folder-name natasha-bandugan
