@@ -333,6 +333,13 @@ async def handle_message(context, message):
     await context.db.put_voting(voting)
 
 
+async def safe_ban_chat_member(bot, **kwargs):
+    try:
+        await bot.ban_chat_member(**kwargs)
+    except exceptions.BadRequest:  # Participant_id_invalid
+        return
+
+
 async def safe_delete_message(bot, **kwargs):
     try:
         await bot.delete_message(**kwargs)
@@ -363,7 +370,8 @@ async def handle_poll_answer(context, poll_answer):
     no_ban = len(voting.no_ban_user_ids) >= voting.min_votes
     if ban or no_ban:
         if ban:
-            await context.bot.ban_chat_member(
+            await safe_ban_chat_member(
+                context.bot,
                 chat_id=voting.chat_id,
                 user_id=voting.candidate_user_id,
             )
