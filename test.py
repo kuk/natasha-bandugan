@@ -173,7 +173,6 @@ def match_trace(trace, etalon):
         if method != etalon_method:
             return False
 
-        # json = json.replace(str(CHAT_ID), '-1')
         if etalon_match not in json:
             return False
 
@@ -207,7 +206,7 @@ async def test_pass(context):
 async def test_use_reply(context):
     await process_update(context, message_json(CHAT_ID, '/voteban'))
     assert match_trace(context.bot.trace, [
-        ['sendMessage', '{"chat_id": %d, "text": "Напиши это в реплае на спам' % CHAT_ID],
+        ['sendMessage', '{"chat_id": %d, "text": "Напиши /voteban в реплае на спам' % CHAT_ID],
         ['deleteMessage', '{"chat_id": %d, "message_id": 91642}' % CHAT_ID],
         ['deleteMessage', '{"chat_id": -1, "message_id": 1}']
     ])

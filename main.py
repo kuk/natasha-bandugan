@@ -263,7 +263,7 @@ OPTION_TEXTS = [
 ]
 
 IS_ADMIN_TEXT = '{mention} админ'
-USE_REPLY_TEXT = 'Напиши это в реплае на спам'
+USE_REPLY_TEXT = 'Напиши /voteban в реплае на спам'
 
 READ_DELAY = 5
 MIN_VOTES = 10
