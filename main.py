@@ -387,7 +387,7 @@ OPTION_TEXTS = [
 ]
 
 IS_ADMIN_TEXT = '{mention} админ'
-USE_REPLY_TEXT = 'Напиши /voteban в реплае на спам'
+USE_REPLY_TEXT = 'Напиши это в реплае на спам'
 
 MODER_BAN_TEXT = 'moder ban, confidence={confidence}'
 VOTING_BAN_TEXT = 'voting ban'
@@ -426,10 +426,10 @@ async def safe_forward_message(bot, **kwargs):
         return
 
 
-async def answer_delay_cleanup(context, orig_message, text):
-    answer_message = await orig_message.answer(text=text)
+async def reply_delay_cleanup(context, orig_message, text):
+    reply_message = await orig_message.reply(text=text)
     await context.sleep(READ_DELAY)
-    for message in [orig_message, answer_message]:
+    for message in [orig_message, reply_message]:
         await safe_delete_message(
             context.bot,
             chat_id=message.chat.id,
@@ -472,7 +472,7 @@ async def handle_message(context, message):
         return
 
     if not message.reply_to_message:
-        await answer_delay_cleanup(
+        await reply_delay_cleanup(
             context, message,
             text=USE_REPLY_TEXT
         )
@@ -486,7 +486,7 @@ async def handle_message(context, message):
         user_id=candidate_user.id
     )
     if ChatMemberStatus.is_chat_admin(member.status):
-        await answer_delay_cleanup(
+        await reply_delay_cleanup(
             context, message,
             text=IS_ADMIN_TEXT.format(
                 mention=candidate_user.mention
@@ -667,7 +667,8 @@ class BotContext:
         self.db = DB()
         self.moder = Moder()
 
-    sleep = asyncio.sleep
+    async def sleep(self, delay):
+        await asyncio.sleep(delay)
 
 
 BotContext.handle_my_chat_member = handle_my_chat_member
