@@ -29,5 +29,6 @@ deploy:
 		--environment DYNAMO_ENDPOINT=$(DYNAMO_ENDPOINT) \
 		--environment CHAT_ID=$(CHAT_ID) \
 		--environment ADMIN_ID=$(ADMIN_ID) \
+		--environment MODER_API_TOKEN=$(MODER_API_TOKEN) \
 		--service-account-id $(SERVICE_ACCOUNT_ID) \
 		--folder-name natasha-bandugan
