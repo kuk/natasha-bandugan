@@ -193,7 +193,7 @@ def dynamo_deser_item(item, cls):
     return cls(**kwargs)
 
 
-def dynamo_ser_item(obj):
+def dynamo_ser_obj(obj):
     item = {}
     for key_name, annot in obj_annots(obj):
         value = getattr(obj, key_name)
@@ -219,7 +219,7 @@ def dynamo_ser_key(parts):
 
 
 async def put_voting(db, obj):
-    item = dynamo_ser_item(obj)
+    item = dynamo_ser_obj(obj)
     await dynamo_put(db.client, 'votings', item)
 
 
@@ -240,7 +240,7 @@ async def delete_voting(db, key):
 
 
 async def put_user_stats(db, obj):
-    item = dynamo_ser_item(obj)
+    item = dynamo_ser_obj(obj)
     item['key'] = {'S': dynamo_ser_key(obj.key)}
     await dynamo_put(db.client, 'user_stats', item)
 
