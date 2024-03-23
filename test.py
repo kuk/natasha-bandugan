@@ -133,7 +133,9 @@ class FakeBot(Bot):
             message_id=-1,
             chat=Chat(id=-1)
         )
-    
+
+    safe_send_message = send_message
+
     async def get_chat_member(self, **kwargs):
         await self.request('getChatMember', kwargs)
 

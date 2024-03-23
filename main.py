@@ -43,6 +43,17 @@ ADMIN_ID = int(getenv('ADMIN_ID'))
 MODER_API_TOKEN = getenv('MODER_API_TOKEN')
 
 
+#####
+#
+#   LOG
+#
+######
+
+
+def log(message):
+    print(message, file=sys.stderr, flush=True)
+
+
 ######
 #
 #   OBJ
@@ -352,14 +363,15 @@ async def predict(moder, text):
     )
 
 
-Moder.predict = predict
-
-
 async def safe_predict(moder, *args):
     try:
         return await moder.predict(*args)
-    except ModerError:
-        return
+    except ModerError as error:
+        log(f'source=Moder.predict, error={error!r}')
+
+
+Moder.predict = predict
+Moder.safe_predict = safe_predict
 
 
 #####
@@ -405,35 +417,21 @@ async def handle_my_chat_member(context, update):
         await context.bot.leave_chat(update.chat.id)
 
 
-async def safe_ban_chat_member(bot, **kwargs):
-    try:
-        await bot.ban_chat_member(**kwargs)
-    except exceptions.BadRequest:  # Participant_id_invalid
-        return
-
-
-async def safe_delete_message(bot, **kwargs):
-    try:
-        await bot.delete_message(**kwargs)
-    except exceptions.MessageToDeleteNotFound:
-        return
-
-
-async def safe_forward_message(bot, **kwargs):
-    try:
-        await bot.forward_message(**kwargs)
-    except exceptions.MessageToForwardNotFound:
-        return
-
-
-async def reply_delay_cleanup(context, orig_message, text):
-    reply_message = await orig_message.reply(text=text)
-    await context.sleep(READ_DELAY)
-    for message in [orig_message, reply_message]:
-        await safe_delete_message(
-            context.bot,
+async def reply_delay_cleanup(context, message, text):
+    reply_message = await context.bot.safe_send_message(
+        chat_id=message.chat.id,
+        text=text,
+        reply_to_message_id=message.message_id
+    )
+    if reply_message:
+        await context.sleep(READ_DELAY)
+        await context.bot.safe_delete_message(
             chat_id=message.chat.id,
             message_id=message.message_id
+        )
+        await context.bot.delete_message(
+            chat_id=reply_message.chat.id,
+            message_id=reply_message.message_id
         )
 
 
@@ -453,7 +451,7 @@ async def handle_message(context, message):
     await context.db.put_user_stats(user_stats)
 
     if user_stats.message_count < 10:
-        pred = await safe_predict(context.moder, message.text)
+        pred = await context.moder.safe_predict(message.text)
         if pred and pred.is_spam:
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
@@ -461,8 +459,7 @@ async def handle_message(context, message):
                     confidence=pred.confidence
                 )
             )
-            await safe_forward_message(
-                context.bot,
+            await context.bot.safe_forward_message(
                 chat_id=ADMIN_ID,
                 from_chat_id=chat_id,
                 message_id=message.message_id
@@ -550,8 +547,7 @@ async def handle_poll_answer(context, poll_answer):
     no_ban = len(voting.no_ban_user_ids) >= voting.min_votes
     if ban or no_ban:
         if ban:
-            await safe_ban_chat_member(
-                context.bot,
+            await context.bot.safe_ban_chat_member(
                 chat_id=voting.chat_id,
                 user_id=voting.candidate_user_id,
             )
@@ -559,21 +555,18 @@ async def handle_poll_answer(context, poll_answer):
                 chat_id=ADMIN_ID,
                 text=VOTING_BAN_TEXT
             )
-            await safe_forward_message(
-                context.bot,
+            await context.bot.safe_forward_message(
                 chat_id=ADMIN_ID,
                 from_chat_id=voting.chat_id,
                 message_id=voting.candidate_message_id
             )
-            await safe_delete_message(
-                context.bot,
+            await context.bot.safe_delete_message(
                 chat_id=voting.chat_id,
                 message_id=voting.candidate_message_id
             )
 
         for message_id in [voting.start_message_id, voting.poll_message_id]:
-            await safe_delete_message(
-                context.bot,
+            await context.bot.safe_delete_message(
                 chat_id=voting.chat_id,
                 message_id=message_id
             )
@@ -600,13 +593,9 @@ def setup_handlers(context):
 #####
 
 
-def log(message):
-    print(message, file=sys.stderr, flush=True)
-
-
 class LoggingMiddleware(BaseMiddleware):
     async def on_pre_process_update(self, update, data):
-        log(update)
+        log(f'source=LoggingMiddleware, update={update}')
 
 
 def setup_middlewares(context):
@@ -619,6 +608,27 @@ def setup_middlewares(context):
 #  BOT
 #
 #######
+
+
+######
+#   SAFE
+#####
+
+
+def safe_method(method):
+    async def wrapped(bot, *args, **kwargs):
+        try:
+            return await method(bot, *args, **kwargs)
+        except exceptions.TelegramAPIError as error:
+            log(f'source=Bot.{method.__name__}, error={error!r}')
+
+    return wrapped
+
+
+Bot.safe_ban_chat_member = safe_method(Bot.ban_chat_member)
+Bot.safe_send_message = safe_method(Bot.send_message)
+Bot.safe_delete_message = safe_method(Bot.delete_message)
+Bot.safe_forward_message = safe_method(Bot.forward_message)
 
 
 ########
