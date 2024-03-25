@@ -451,7 +451,8 @@ async def handle_message(context, message):
     await context.db.put_user_stats(user_stats)
 
     if user_stats.message_count < 10:
-        pred = await context.moder.safe_predict(message.text)
+        text = message.text or message.caption
+        pred = await context.moder.safe_predict(text)
         if pred and pred.is_spam:
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
