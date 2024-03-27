@@ -263,7 +263,7 @@ def poll_answer_json(option_id):
     return '{"poll_answer": {"poll_id": "-1", "user": {"id": -1, "is_bot": false, "first_name": "A", "last_name": "K", "username": "ak", "language_code": "ru"}, "option_ids": [%d]}}' % option_id
 
 
-async def test_leave_chat(context):
+async def test_bot_leave_chat(context):
     await process_update(context, my_chat_member_json(CHAT_ID))
     await process_update(context, my_chat_member_json(-1))
     assert match_trace(context.bot.trace, [
@@ -271,7 +271,7 @@ async def test_leave_chat(context):
     ])
 
 
-async def test_pass(context):
+async def test_bot_pass(context):
     await process_update(context, message_json(CHAT_ID, 'не /voteban'))
     assert match_trace(context.bot.trace, [])
 
@@ -279,14 +279,14 @@ async def test_pass(context):
     assert match_trace(context.bot.trace, [])
 
 
-async def test_user_stats(context):
+async def test_bot_user_stats(context):
     await process_update(context, message_json(CHAT_ID, '...'))
     assert context.db.user_stats == [
         UserStats(chat_id=CHAT_ID, user_id=-1, message_count=1)
     ]
 
 
-async def test_use_reply(context):
+async def test_bot_use_reply(context):
     await process_update(context, message_json(CHAT_ID, '/voteban'))
     assert match_trace(context.bot.trace, [
         ['sendMessage', '{"chat_id": %d, "text": "Напиши это в реплае на спам' % CHAT_ID],
@@ -295,16 +295,18 @@ async def test_use_reply(context):
     ])
     
 
-async def test_auto_delete(context):
+async def test_bot_moder_delete(context):
     context.moder.pred.is_spam = True
     await process_update(context, message_json(CHAT_ID, 'крипто скамерский скам'))
     assert match_trace(context.bot.trace, [
+        ['banChatMember', '{"chat_id": %d, "user_id": -1}' % CHAT_ID],
         ['sendMessage', '{"chat_id": %d, "text": "moder ban, confidence=1.0"}' % ADMIN_ID],
-        ['forwardMessage', '{"chat_id": %d, "from_chat_id": %d, "message_id": -1}' % (ADMIN_ID, CHAT_ID)]
+        ['forwardMessage', '{"chat_id": %d, "from_chat_id": %d, "message_id": -1}' % (ADMIN_ID, CHAT_ID)],
+        ['deleteMessage', '{"chat_id": %d, "message_id": -1}' % CHAT_ID]
     ])
 
 
-async def test_start_voting(context):
+async def test_bot_start_voting(context):
     await process_update(context, reply_message_json('/voteban'))
     assert match_trace(context.bot.trace, [
         ['getChatMember', '{"chat_id": %d, "user_id": -1}' % CHAT_ID],
@@ -326,7 +328,7 @@ async def test_start_voting(context):
     ]
 
 
-async def test_ban_admin(context):
+async def test_bot_ban_admin(context):
     context.bot.admin_chat_member = True
     await process_update(context, reply_message_json('/voteban'))
     assert match_trace(context.bot.trace, [
@@ -346,7 +348,7 @@ INIT_VOTING = Voting(
 )
 
 
-async def test_ban_vote(context):
+async def test_bot_ban_vote(context):
     context.db.votings = [INIT_VOTING]
     await process_update(context, poll_answer_json(0))
     assert match_trace(context.bot.trace, [
@@ -361,7 +363,7 @@ async def test_ban_vote(context):
     assert voting.ban_user_ids == [-1]
 
 
-async def test_no_ban_vote(context):
+async def test_bot_no_ban_vote(context):
     context.db.votings = [INIT_VOTING]
     await process_update(context, poll_answer_json(1))
     assert match_trace(context.bot.trace, [
@@ -372,7 +374,7 @@ async def test_no_ban_vote(context):
     assert voting.no_ban_user_ids == [-1]
 
 
-async def test_revote(context):
+async def test_bot_revote(context):
     context.db.votings = [
         replace(INIT_VOTING, min_votes=2)
     ]

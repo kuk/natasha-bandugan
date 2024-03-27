@@ -454,6 +454,10 @@ async def handle_message(context, message):
         text = message.text or message.caption
         pred = await context.moder.safe_predict(text)
         if pred and pred.is_spam:
+            await context.bot.safe_ban_chat_member(
+                chat_id=chat_id,
+                user_id=user_id,
+            )
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
                 text=MODER_BAN_TEXT.format(
@@ -463,6 +467,10 @@ async def handle_message(context, message):
             await context.bot.safe_forward_message(
                 chat_id=ADMIN_ID,
                 from_chat_id=chat_id,
+                message_id=message.message_id
+            )
+            await context.bot.safe_delete_message(
+                chat_id=chat_id,
                 message_id=message.message_id
             )
 
